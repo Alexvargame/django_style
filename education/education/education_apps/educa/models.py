@@ -1,7 +1,10 @@
 from django.db import models
-from django.db.models import Q, F
+from django.db.models import Q, F, Avg
 from uuid import uuid4
 from education.education_apps.users.models import BaseUser
+
+
+
 
 class Faculty(models.Model):
     name = models.CharField(max_length=255)
@@ -21,7 +24,7 @@ class Student(models.Model):
     identifier = models.UUIDField(default=uuid4)
     faculty = models.ForeignKey(Faculty, related_name='faculty_students', on_delete=models.CASCADE)
     #user = models.ForeignKey(BaseUser, related_name='user_student', on_delete=models.CASCADE, unique=True)
-    user = models.OneToOneField(BaseUser, related_name='user_student', on_delete=models.CASCADE)
+    user = models.OneToOneField(BaseUser, related_name='user_student', on_delete=models.CASCADE, null=True)
 
     class Meta:
         verbose_name = 'Студент'
@@ -72,8 +75,10 @@ class Roster(models.Model):
     end_date = models.DateField()
     active = models.BooleanField(default=True)
     deactivated_at = models.DateField(null=True, blank=True)
+    # control_task = models.JSONField(default={})
 
-
+    def __str__(self):
+        return f'{self.student}: {self.faculty_course}'
     class Meta:
         verbose_name = 'Список'
         verbose_name_plural = 'Списки'
@@ -138,10 +143,24 @@ class ControlTask(models.Model):
         verbose_name_plural = 'Контрольные работы'
 
     def __str__(self):
-        return self.description
+        return f'{self.id} {self.description}'
+
+    # def save(self, *args, **kwargs):
+    #     super().save(*args, **kwargs)
+    #     print(self.id)
+    #     if self.exercises.exists():
+    #         self.average_rank = self.exercises.aggregate(avg_rank=Avg('rank'))['ag_rank']
+    #     else:
+    #         self.average_rank = 0.0
+    #     print(self.exercises.all())
+    #     super().save(*args, **kwargs)
+
+    # def get_average_rank(self):
+    #     return sum([ex.rank for ex in self.exercises.all()]) / len(self.exercises.all())
 
     def get_exercises(self):
         return [ex for ex in self.exercises.all()]
+# 
 
 class ControlTest(models.Model):
     description = models.CharField(max_length=100)
@@ -155,7 +174,53 @@ class ControlTest(models.Model):
         verbose_name_plural = 'Контрольные тесты'
 
     def __str__(self):
-        return self.description
+        return f'{self.id} {self.description}'
 
     def get_questions(self):
         return [q for q in self.questions.all()]
+
+def default_control():
+    return dict()
+
+class ControlTaskResult(models.Model):
+    roster = models.ForeignKey(Roster, related_name='control_task_results', on_delete=models.CASCADE)
+    control_task = models.ForeignKey(ControlTask, related_name='results', on_delete=models.CASCADE)
+    answers = models.JSONField(default=default_control)
+    score = models.FloatField(default=0.0)
+    check_in = models.BooleanField(default=False)
+    created_at = models.DateField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Результат контрольной работы'
+        verbose_name_plural = 'Результаты контрольных работ'
+        constraints = [
+            models.UniqueConstraint(
+                fields=["roster",
+                        "control_task",
+                        ],
+                name='unigue_control_task_result'
+            ),
+            # models.CheckConstraint(
+            #     fields=['answers']
+            # )
+        ]
+
+
+class ControlTestResult(models.Model):
+    roster = models.ForeignKey(Roster, related_name='control_test_results', on_delete=models.CASCADE)
+    control_test = models.ForeignKey(ControlTest, related_name='results', on_delete=models.CASCADE)
+    answers = models.JSONField(default=default_control, blank=True, null=True)
+    score = models.FloatField(default=0.0)
+    check_in = models.BooleanField(default=False)
+    created_at = models.DateField(auto_now_add=True)
+    class Meta:
+        verbose_name = 'Результат контрольного теста'
+        verbose_name_plural = 'Результаты контрольных тестов'
+        constraints = [
+            models.UniqueConstraint(
+                fields=["roster",
+                        "control_test",
+                        ],
+                name='unigue_control_test_result'
+            )
+        ]

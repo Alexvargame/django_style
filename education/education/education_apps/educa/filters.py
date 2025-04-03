@@ -3,7 +3,8 @@ import django_filters
 from django_filters import BaseInFilter, NumberFilter
 
 from education.education_apps.educa.models import (Student, Faculty, Roster, FacultyCourse,
-                                                   Question, Exercise, ControlTest, ControlTask)
+                                                   Question, Exercise, ControlTest, ControlTask,
+                                                   ControlTaskResult, ControlTestResult)
 
 class StudentFilters(django_filters.FilterSet):
 
@@ -56,6 +57,19 @@ class ControlTestFilters(django_filters.FilterSet):
         model = ControlTest
         fields = ('id','average_rank')
 
+class ControlTestResaltFilters(django_filters.FilterSet):
+    score__gte = NumberFilter(field_name='score', lookup_expr='gte')  # Фильтр "больше или равно"
+    score__lte = NumberFilter(field_name='score', lookup_expr='lte')  # Фильтр "меньше или равно"
+    class Meta:
+        model = ControlTestResult
+        fields = ('id','roster', 'control_test', 'score', 'check_in')
+
+class ControlTaskResaltFilters(django_filters.FilterSet):
+    score__gte = NumberFilter(field_name='score', lookup_expr='gte')  # Фильтр "больше или равно"
+    score__lte = NumberFilter(field_name='score', lookup_expr='lte')  # Фильтр "меньше или равно"
+    class Meta:
+        model = ControlTaskResult
+        fields = ('id','roster', 'control_task', 'score', 'check_in')
 #
 # class ControlTaskFilters(django_filters.FilterSet):
 #     id = NumberFilter()

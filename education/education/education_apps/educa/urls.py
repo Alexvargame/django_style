@@ -7,6 +7,12 @@ from .apis.question_apis import QuestionCreateApi, QuestionUpdateApi, QuestionDe
 from .apis.exercise_apis import ExerciseCreateApi, ExerciseUpdateApi, ExerciseDetailApi, ExerciseListApi
 from .apis.control_task_apis import ControlTaskDetailApi, ControlTaskCreateApi, ControlTaskListApi, ControlTaskUpdateApi
 from .apis.control_test_apis import ControlTestListApi, ControlTestCreateApi, ControlTestDetailApi, ControlTestUpdateApi
+from .apis.control_test_resalt_apis import (ControlTestResultUpdateApi, ControlTestResultListApi,
+                                            ControlTestResultCreateApi, ControlTestResultDetailApi,
+                                            ControlTestResultCheckInApi)
+from .apis.control_task_resalt_apis import (ControlTaskResultDetailApi, ControlTaskResultCreateApi,
+                                            ControlTaskResultCheckInApi, ControlTaskResultListApi,
+                                            ControlTaskResultUpdateApi)
 
 urlpatterns = [
     path('students/', StudentListApi.as_view(), name='students_list'),
@@ -49,5 +55,20 @@ urlpatterns = [
     path('control_tests/', ControlTestListApi.as_view(), name='control_test_list'),
     path('control_tests/<int:control_test_id>/', ControlTestDetailApi.as_view(), name='control_test_detail'),
     path('control_tests/<int:control_test_id>/update/', ControlTestUpdateApi.as_view(), name='control_test_update'),
+
+    path('control_test_results/create/', ControlTestResultCreateApi.as_view(), name='control_test_result_create'),
+    path('control_test_results/', ControlTestResultListApi.as_view(), name='control_test_result_list'),
+    path('control_test_results/<int:control_test_result_id>/', ControlTestResultDetailApi.as_view(), name='control_test_result_detail'),
+    path('control_test_results/<int:control_test_result_id>/check_in/', ControlTestResultCheckInApi.as_view(), name='control_test_result_check_in'),
+    path('control_test_results/<int:control_test_result_id>/update/', ControlTestResultUpdateApi.as_view(), name='control_test_result_update'),
+
+    path('control_task_results/create/', ControlTaskResultCreateApi.as_view(), name='control_task_result_create'),
+    path('control_task_results/', ControlTaskResultListApi.as_view(), name='control_task_result_list'),
+    path('control_task_results/<int:control_task_result_id>/', ControlTaskResultDetailApi.as_view(),
+         name='control_task_result_detail'),
+    path('control_task_results/<int:control_task_result_id>/check_in/', ControlTaskResultCheckInApi.as_view(),
+         name='control_task_result_check_in'),
+    path('control_task_results/<int:control_task_result_id>/update/', ControlTaskResultUpdateApi.as_view(),
+         name='control_task_result_update'),
 
 ]

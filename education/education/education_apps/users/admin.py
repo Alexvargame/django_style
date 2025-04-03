@@ -7,7 +7,7 @@ from education.education_apps.users.services import user_create
 @admin.register(BaseUser)
 class BaseUserAdmin(admin.ModelAdmin):
 
-    list_display = ('name', 'surname', 'email', 'is_admin', 'is_superuser', 'is_active', 'is_student',
+    list_display = ('id', 'name', 'surname', 'email', 'is_admin', 'is_superuser', 'is_active', 'is_student',
                     'created_at', 'updated_at')
     search_fields = ('email',)
     list_filter = ('is_active', 'is_admin', 'is_superuser')

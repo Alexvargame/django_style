@@ -1,16 +1,22 @@
 from django.db import transaction
 from django.utils.text import slugify
-
+from collections import OrderedDict
 from django.core.exceptions import ValidationError
 
 from education.education_apps.educa.models import (Student, Faculty, FacultyCourse, Roster, Question,
-                                                   Exercise, ControlTest, ControlTask)
+                                                   Exercise, ControlTest, ControlTask, ControlTestResult,
+                                                   ControlTaskResult)
 from education.education_apps.common.services import model_update
 from education.education_apps.educa.static_data import slovar
 
-from education.education_apps.educa.selectors import ControlTaskSelectors, ExerciseSelectors, QuestionSelectors
-
-ROSTER_VALIDATE_PERIOD_OUTSIDE_COURSE_PERIOD = "Roster period cannot be outside {faculty_course} period"
+from education.education_apps.educa.selectors import (ControlTaskSelectors, ExerciseSelectors,
+                                                      QuestionSelectors, ControlTestResultSelectors,
+                                                      RosterSelectors, ControlTestSelectors,
+                                                        )
+ROSTER_CREATE_DIFFERENT_FACULTYS = (
+    "Cannot roster {student} in {faculty_course}"
+)
+ROSTER_VALIDATE_PERIOD_OUTSIDE_COURSE_PERIOD = 'Roster period cannot be outside {faculty_course} period'
 class StudentService:
 
     @transaction.atomic
@@ -66,6 +72,20 @@ class FacultyCourseService:
 
 class RosterService:
 
+    def roster_faculty_course_validate(self, student, faculty_course):
+        print(student, faculty_course)
+        print(type(student), type(faculty_course))
+        print(student.faculty_id, faculty_course.faculty_id)
+        if student.faculty_id != faculty_course.faculty_id:
+            raise ValidationError(
+                ROSTER_CREATE_DIFFERENT_FACULTYS.format(
+                    student=student.__str__(),
+                    faculty_course=faculty_course.__str__()# или faculty_course.__str__()
+                )
+            )
+        else:
+            print('NO ERROR RAISED')
+
     def roster_validate_period(self, start_date, end_date, faculty_course):
 
         start_date_validation = start_date >= faculty_course.start_date and start_date < faculty_course.end_date
@@ -78,9 +98,16 @@ class RosterService:
 
     @transaction.atomic
     def roster_create(self, student, faculty_course, start_date, end_date):
+
         start_date = start_date or faculty_course.start_date
         end_date = end_date or faculty_course.end_date
         self.roster_validate_period(start_date, end_date, faculty_course)
+        # expected_message = f"Cannot roster {student.identifier} in {faculty_course.name}"
+        #
+        #
+        # with self.assertRaisesMessage(ValidationError, expected_message):
+        # self.roster_faculty_course_validate(student, course)
+        self.roster_faculty_course_validate(student, faculty_course)
         roster = Roster.objects.create(
             student=student, faculty_course=faculty_course,
             start_date=start_date, end_date=end_date
@@ -153,6 +180,7 @@ class ControlTestService:
         control_test = ControlTest.objects.create(description=description, average_rank=average_rank,
                                                   faculty_course=FacultyCourse.objects.get(id=faculty_course))
         control_test.questions.set(choice_questions)
+        control_test.average_rank = round(control_test.average_rank)
         control_test.save()
         return control_test
 
@@ -166,3 +194,59 @@ class ControlTestService:
 
         control_test.save()
         return control_test
+
+class ControlTestResultService:
+
+    def value_dict(self):
+        return {'answer': '', 'right_answer': ''}
+    @transaction.atomic
+    def control_test_result_create(self, roster, control_test, answers_lst):
+        roster = RosterSelectors().get_roster(roster_id=roster)
+        control_test = ControlTestSelectors().get_control_test(control_test_id=control_test)
+        control_test_result = ControlTestResult.objects.create(roster=roster, control_test=control_test)
+        answers = OrderedDict.fromkeys([ct.id for ct in control_test.questions.all()],self.value_dict())
+        for i in range(len(answers_lst)):
+            answers[list(answers.keys())[i]]['answer'] = answers_lst[i]
+        control_test_result.answers = answers
+        control_test_result.save()
+        return control_test_result
+
+    @transaction.atomic
+    def control_test_result_update(self, control_test_result, data):
+        non_side_effect_fields = ['check_in']
+        control_test_result, has_updated = model_update(instance=control_test_result, fields=non_side_effect_fields, data=data)
+        for ans in control_test_result.control_test.questions.all():
+            control_test_result.answers[str(ans.id)]['right_answer'] = ans.answer
+            if (control_test_result.answers[str(ans.id)]['answer'] == ans.answer
+                    or control_test_result.answers[str(ans.id)]['answer'] == ans.choice_answer[ans.answer]) :
+                control_test_result.score += ans.rank
+        control_test_result.save()
+        return control_test_result
+
+class ControlTaskResultService:
+
+    def value_dict(self):
+        return {'answer': '', 'right_answer': ''}
+    @transaction.atomic
+    def control_task_result_create(self, roster, control_task, answers_lst):
+        roster = RosterSelectors().get_roster(roster_id=roster)
+        control_task = ControlTaskSelectors().get_control_task(control_task_id=control_task)
+        control_task_result = ControlTaskResult.objects.create(roster=roster, control_task=control_task)
+        answers = OrderedDict.fromkeys([ct.id for ct in control_task.exercises.all()],self.value_dict())
+        for i in range(len(answers_lst)):
+            answers[list(answers.keys())[i]]['answer'] = answers_lst[i]
+        control_task_result.answers = answers
+        control_task_result.save()
+        return control_task_result
+
+    @transaction.atomic
+    def control_task_result_update(self, control_task_result, data):
+        non_side_effect_fields = ['check_in']
+        control_task_result, has_updated = model_update(instance=control_task_result,
+                                                        fields=non_side_effect_fields, data=data)
+        for ans in control_task_result.control_task.exercises.all():
+            control_task_result.answers[str(ans.id)]['right_answer'] = ans.answer
+            if control_task_result.answers[str(ans.id)]['answer'] == ans.answer:
+                control_task_result.score += ans.rank
+        control_task_result.save()
+        return control_task_result

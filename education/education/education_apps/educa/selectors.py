@@ -6,11 +6,13 @@ from education.education_apps.common.utils import get_object
 from education.education_apps.educa.filters import (StudentFilters, FacultyFilters,
                                                     FacultyCourseFilters, RosterFilters,
                                                     QuestionFilters, ExerciseFilters,
-                                                    ControlTaskFilters, ControlTestFilters
+                                                    ControlTaskFilters, ControlTestFilters,
+                                                    ControlTestResaltFilters
                                                     )
 from education.education_apps.educa.models import (Student, Faculty,
                                                    FacultyCourse, Roster, Question, Exercise,
-                                                   ControlTest, ControlTask
+                                                   ControlTest, ControlTask, ControlTestResult,
+                                                   ControlTaskResult,
                                                    )
 
 class StudentSelectors:
@@ -105,3 +107,23 @@ class ControlTestSelectors:
         filters = filters or {}
         qs = ControlTest.objects.all()
         return ControlTestFilters(filters, qs).qs
+
+class ControlTestResultSelectors:
+
+    def get_control_test_result(self, control_test_result_id):
+        control_test_result = ControlTestResult.objects.get(id=control_test_result_id)
+        return control_test_result
+    def control_test_result_list(self, filters=None):
+        filters = filters or {}
+        qs = ControlTestResult.objects.all()
+        return ControlTestResaltFilters(filters, qs).qs
+
+class ControlTaskResultSelectors:
+
+    def get_control_task_result(self, control_task_result_id):
+        control_task_result = ControlTaskResult.objects.get(id=control_task_result_id)
+        return control_task_result
+    def control_task_result_list(self, filters=None):
+        filters = filters or {}
+        qs = ControlTaskResult.objects.all()
+        return ControlTaskResaltFilters(filters, qs).qs
