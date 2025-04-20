@@ -31,7 +31,7 @@ class UserListApi(APIView):
     class Pagination(LimitOffsetPagination):
         default_limit = 2
 
-    class FilterSerilizer(serializers.Serializer):
+    class FilterSerializer(serializers.Serializer):
         id = serializers.IntegerField(required=False)
         is_admin = serializers.BooleanField(required=False, allow_null=True, default=None)
         email = serializers.EmailField(required=False)
@@ -41,7 +41,7 @@ class UserListApi(APIView):
             model = BaseUser
             fields = ('id', 'email', 'is_admin','is_student')
     def get(self, request):
-        filters_serializer = self.FilterSerilizer(data=request.query_params)
+        filters_serializer = self.FilterSerializer(data=request.query_params)
         filters_serializer.is_valid(raise_exception=True)
 
         users = user_list(filters=filters_serializer.validated_data)
